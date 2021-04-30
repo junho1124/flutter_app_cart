@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_app_cart/bloc/cart_bloc.dart';
+import 'package:flutter_app_cart/bloc/cart_provider.dart';
 import 'package:flutter_app_cart/cart.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_app_cart/item.dart';
 
 class Catalog extends StatefulWidget {
@@ -10,11 +10,9 @@ class Catalog extends StatefulWidget {
 }
 
 class _CatalogState extends State<Catalog> {
-  List<Item> _itemList = itemList;
-
   @override
   Widget build(BuildContext context) {
-    final _cartBloc = BlocProvider.of<CartBloc>(context);
+  CartBloc cartBloc = CartProvider.of(context);
 
     return Scaffold(
         appBar: AppBar(
@@ -29,22 +27,23 @@ class _CatalogState extends State<Catalog> {
                 )
           ],
         ),
-        body: BlocBuilder<CartBloc, List<Item>>(
-          bloc: _cartBloc,
-          builder: (BuildContext context, List state) {
-            return Center(
-              child: ListView(
-                children: _itemList
-                    .map((item) => _buildItem(item, state, _cartBloc))
-                    .toList(),
-              ),
-            );
-          },
-        ));
+        body: StreamBuilder<List<Item>>(
+                stream: cartBloc.cartList,
+                builder: (context, snapshot) {
+                  return Center(
+                    child: ListView(
+                      children: cartBloc.itemList
+                          .map((item) => _buildItem(item, snapshot.data, cartBloc))
+                          .toList(),
+                    ),
+                  );
+                }
+                ),
+    );
   }
 
-  Widget _buildItem(Item todo, List state, CartBloc bloc) {
-    final isChecked = state.contains(todo);
+  Widget _buildItem(Item todo, List<Item> state, CartBloc cartBloc) {
+    final isChecked = state == null ? false : state.contains(todo);
 
     return Padding(
       child: ListTile(
@@ -61,13 +60,11 @@ class _CatalogState extends State<Catalog> {
                 )
               : Icon(Icons.check),
           onPressed: () {
-            setState(() {
               if (isChecked) {
-                bloc.add(CartEvent(CartEventType.remove, todo));
+                cartBloc.add(CartEvent(CartEventType.remove, todo));
               } else {
-                bloc.add(CartEvent(CartEventType.add, todo));
+                cartBloc.add(CartEvent(CartEventType.add, todo));
               }
-            });
           },
         ),
       ),
